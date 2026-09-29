@@ -94,7 +94,7 @@ function onWidgetClick(event) {
 
 /**
  * Wire up the right-click context menu (widget mode only):
- * always-on-top toggle, settings, about, quit.
+ * hide widget, always-on-top toggle, settings, about, quit.
  *
  * @param {boolean} alwaysOnTop - Initial always-on-top state, used to set
  *   the menu checkmark to match the value restored from the INI file.
@@ -104,6 +104,7 @@ function setupContextMenu(alwaysOnTop) {
     const aotCheck = document.querySelector('#menuAlwaysOnTop .menu-check');
     aotCheck.textContent = alwaysOnTop ? '✓' : '';
 
+    document.querySelector('#menuHideWidget .menu-label').textContent = translations.menu_hide_widget;
     document.querySelector('#menuAlwaysOnTop .menu-label').textContent = translations.menu_always_on_top;
     document.querySelector('#menuSettings .menu-label').textContent = translations.menu_settings;
     document.querySelector('#menuAbout .menu-label').textContent = translations.menu_about;
@@ -117,6 +118,7 @@ function setupContextMenu(alwaysOnTop) {
     });
     document.addEventListener('click', () => menu.classList.remove('open'));
 
+    document.getElementById('menuHideWidget').addEventListener('click', () => pywebview.api.close());
     document.getElementById('menuAlwaysOnTop').addEventListener('click', () => {
         Promise.resolve(pywebview.api.toggle_always_on_top()).then((on) => {
             aotCheck.textContent = on ? '✓' : '';
