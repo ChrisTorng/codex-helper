@@ -30,7 +30,7 @@ from .settings import (
 from .formatting import elapsed_pct, field_period, format_credits, format_tooltip, parse_field_name, popup_label
 from .i18n import T
 from .popup import SettingsWindow, UsagePopup, show_about_dialog
-from .tray_icon import load_tray_icon
+from .tray_icon import load_tray_icon, render_usage_tray_icon
 
 __all__ = ['UsageMonitorForCodex', 'crash_log']
 
@@ -271,11 +271,8 @@ class UsageMonitorForCodex:
     # Tray rendering
 
     def _render_tray(self) -> None:
-        """Refresh the tray tooltip from the current state.
-
-        The tray icon is a static brand mark - the always-on-top widget shows
-        live usage - so only the hover tooltip changes here.
-        """
+        """Refresh the dynamic tray gauge and hover tooltip from current state."""
+        self.icon.icon = render_usage_tray_icon(self._last_response)
         self.icon.title = format_tooltip(self._last_response)
 
     # Update orchestration
