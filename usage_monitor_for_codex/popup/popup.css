@@ -181,9 +181,13 @@ footer {
 /* Resident widget: the whole window is clickable to toggle compact/expanded. */
 body.widget { cursor: pointer; }
 
-/* The resident widget is not "closed" - collapse it by clicking, quit via the
-   right-click menu. Hide the popup's close button. */
-body.widget #closeBtn { display: none; }
+/* The widget can be hidden without quitting the tray monitor. Keep the close
+   button visible in both expanded and compact modes. */
+body.widget #closeBtn {
+    display: block;
+    position: relative;
+    z-index: 10;
+}
 
 body.widget.compact {
     padding: 8px 12px;
@@ -192,7 +196,14 @@ body.widget.compact {
 
 /* Compact view: the title header and any collapsed block are hidden, leaving
    only the blocks marked "visible". */
-body.widget.compact > header { display: none; }
+body.widget.compact > header {
+    display: flex;
+    position: absolute;
+    top: 4px;
+    right: 5px;
+    z-index: 20;
+}
+body.widget.compact > header > #title { display: none; }
 body.widget.compact #blocks { gap: 8px; }
 body.widget.compact .block.shown.state-collapsed { display: none; }
 
