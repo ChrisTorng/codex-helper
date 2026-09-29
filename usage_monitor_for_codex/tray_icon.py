@@ -118,13 +118,8 @@ def _draw_bar(
             fill=255,
         )
         crop = mask.crop((0, 0, fill_width, mask.height))
-        image.alpha_composite(fill_image, (inner_x0, inner_y0), (0, 0, fill_width, fill_image.height))
-        # alpha_composite above ignores the rounded crop; repaint transparent corner
-        # pixels from the track by masking the visible fill into a temporary layer.
         layer = Image.new('RGBA', image.size, (0, 0, 0, 0))
         layer.paste(fill_image, (inner_x0, inner_y0), crop)
-        # Restore the track then composite the properly clipped fill.
-        draw.rounded_rectangle((x0, y0, x1, y1), radius=radius, fill=track)
         image.alpha_composite(layer)
 
     if marker is not None:
