@@ -283,7 +283,9 @@ class UsageMonitorForCodex:
             crash_log(traceback.format_exc())
         finally:
             self._popup_closed_at = time.time()
-            self._popup_open = False
+            with self._popup_lock:
+                self._popup_instance = None
+                self._popup_open = False
 
     # Tray rendering
 
