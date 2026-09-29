@@ -100,6 +100,7 @@ class UsageMonitorForCodex:
         # Popup state
         self._popup_lock = threading.Lock()
         self._popup_open = False
+        self._popup_instance: UsagePopup | None = None
         self._popup_closed_at = 0.0
         self._next_poll_time: float | None = None
 
@@ -117,6 +118,10 @@ class UsageMonitorForCodex:
                 # default=True: left-clicking the tray icon reopens the widget,
                 # so closing it (the X button) is never a dead end.
                 pystray.MenuItem(T['show_widget'], self.on_show_popup, default=True),
+                pystray.MenuItem(
+                    T['hide_widget'], self.on_hide_popup,
+                    enabled=lambda item: self._popup_open,
+                ),
                 pystray.MenuItem(T['settings_title'], self.on_open_settings),
                 pystray.MenuItem(T['about_title'], self.on_about),
                 pystray.Menu.SEPARATOR,
@@ -141,13 +146,25 @@ class UsageMonitorForCodex:
     # Menu actions
 
     def on_show_popup(self, icon: Any = None, item: Any = None) -> None:
+        """Open the widget, or bring the existing widget to the foreground."""
         with self._popup_lock:
+            popup = self._popup_instance
+            if self._popup_open and popup is not None:
+                popup.activate()
+                return
             if self._popup_open:
                 return
             if time.time() - self._popup_closed_at < 0.15:
                 return
             self._popup_open = True
         threading.Thread(target=self._open_popup, daemon=True).start()
+
+    def on_hide_popup(self, icon: Any = None, item: Any = None) -> None:
+        """Hide/close only the widget; keep the tray monitor running."""
+        with self._popup_lock:
+            popup = self._popup_instance
+        if popup is not None:
+            popup.close()
 
     def on_toggle_autostart(self, icon: Any = None, item: Any = None) -> None:
         set_autostart(not is_autostart_enabled())
@@ -259,7 +276,7 @@ class UsageMonitorForCodex:
                     if needs_refresh:
                         self.update()
                 threading.Thread(target=_bg_refresh, daemon=True).start()
-            UsagePopup(self)
+            popup = UsagePopup(self)
         except Exception:
             # Mirror _open_settings_window: this runs on a daemon thread, so an
             # unreported failure here means the widget silently never opens.
