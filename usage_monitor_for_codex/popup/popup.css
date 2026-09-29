@@ -196,14 +196,7 @@ body.widget.compact {
 
 /* Compact view: the title header and any collapsed block are hidden, leaving
    only the blocks marked "visible". */
-body.widget.compact > header {
-    display: flex;
-    position: absolute;
-    top: 4px;
-    right: 5px;
-    z-index: 20;
-}
-body.widget.compact > header > #title { display: none; }
+body.widget.compact > header { display: none; }
 body.widget.compact #blocks { gap: 8px; }
 body.widget.compact .block.shown.state-collapsed { display: none; }
 
