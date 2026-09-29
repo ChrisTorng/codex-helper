@@ -30,7 +30,7 @@ from .settings import (
 from .formatting import elapsed_pct, field_period, format_credits, format_tooltip, parse_field_name, popup_label
 from .i18n import T
 from .popup import SettingsWindow, UsagePopup, show_about_dialog
-from .tray_icon import load_tray_icon
+from .tray_icon import load_tray_icon, render_usage_tray_icon
 
 __all__ = ['UsageMonitorForCodex', 'crash_log']
 
@@ -100,6 +100,7 @@ class UsageMonitorForCodex:
         # Popup state
         self._popup_lock = threading.Lock()
         self._popup_open = False
+        self._popup_instance: UsagePopup | None = None
         self._popup_closed_at = 0.0
         self._next_poll_time: float | None = None
 
@@ -117,6 +118,10 @@ class UsageMonitorForCodex:
                 # default=True: left-clicking the tray icon reopens the widget,
                 # so closing it (the X button) is never a dead end.
                 pystray.MenuItem(T['show_widget'], self.on_show_popup, default=True),
+                pystray.MenuItem(
+                    T['hide_widget'], self.on_hide_popup,
+                    enabled=lambda item: self._popup_open,
+                ),
                 pystray.MenuItem(T['settings_title'], self.on_open_settings),
                 pystray.MenuItem(T['about_title'], self.on_about),
                 pystray.Menu.SEPARATOR,
@@ -141,13 +146,25 @@ class UsageMonitorForCodex:
     # Menu actions
 
     def on_show_popup(self, icon: Any = None, item: Any = None) -> None:
+        """Open the widget, or bring the existing widget to the foreground."""
         with self._popup_lock:
+            popup = self._popup_instance
+            if self._popup_open and popup is not None:
+                popup.activate()
+                return
             if self._popup_open:
                 return
             if time.time() - self._popup_closed_at < 0.15:
                 return
             self._popup_open = True
         threading.Thread(target=self._open_popup, daemon=True).start()
+
+    def on_hide_popup(self, icon: Any = None, item: Any = None) -> None:
+        """Hide/close only the widget; keep the tray monitor running."""
+        with self._popup_lock:
+            popup = self._popup_instance
+        if popup is not None:
+            popup.close()
 
     def on_toggle_autostart(self, icon: Any = None, item: Any = None) -> None:
         set_autostart(not is_autostart_enabled())
@@ -259,23 +276,22 @@ class UsageMonitorForCodex:
                     if needs_refresh:
                         self.update()
                 threading.Thread(target=_bg_refresh, daemon=True).start()
-            UsagePopup(self)
+            popup = UsagePopup(self)
         except Exception:
             # Mirror _open_settings_window: this runs on a daemon thread, so an
             # unreported failure here means the widget silently never opens.
             crash_log(traceback.format_exc())
         finally:
             self._popup_closed_at = time.time()
-            self._popup_open = False
+            with self._popup_lock:
+                self._popup_instance = None
+                self._popup_open = False
 
     # Tray rendering
 
     def _render_tray(self) -> None:
-        """Refresh the tray tooltip from the current state.
-
-        The tray icon is a static brand mark - the always-on-top widget shows
-        live usage - so only the hover tooltip changes here.
-        """
+        """Refresh the dynamic tray gauge and hover tooltip from current state."""
+        self.icon.icon = render_usage_tray_icon(self._last_response)
         self.icon.title = format_tooltip(self._last_response)
 
     # Update orchestration

@@ -1,0 +1,64 @@
+name: Windows EXE
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-exe-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-build:
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run unit tests
+        shell: pwsh
+        run: |
+          python -m unittest discover -s tests -p "test_*.py" -v
+
+      - name: Build standalone Windows executable
+        shell: pwsh
+        run: |
+          python build.py
+
+      - name: Verify executable
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "dist/CodexUsageMonitor.exe")) {
+            throw "dist/CodexUsageMonitor.exe was not produced."
+          }
+          Get-Item "dist/CodexUsageMonitor.exe" | Format-List Name,Length,LastWriteTime
+
+      - name: Upload Windows executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: CodexUsageMonitor-win-x64
+          path: dist/CodexUsageMonitor.exe
+          if-no-files-found: error
+          retention-days: 30

@@ -376,7 +376,7 @@ def _init_config(snap: CacheSnapshot, next_poll_time: float | None = None, *, al
             'status_next_update': T['status_next_update'], 'status_refreshing': T['status_refreshing'],
             'status_local_snapshot': T['status_local_snapshot'], 'status_session_mode': T['status_session_mode'],
             'duration_hm': T['duration_hm'], 'duration_m': T['duration_m'], 'duration_s': T['duration_s'],
-            'menu_always_on_top': T['always_on_top'], 'menu_settings': T['settings_title'],
+            'menu_hide_widget': T['hide_widget'], 'menu_always_on_top': T['always_on_top'], 'menu_settings': T['settings_title'],
             'menu_about': T['about_title'], 'menu_quit': T['quit'],
         },
         'app_version': __version__,
@@ -508,6 +508,7 @@ class UsagePopup:
             # rather than attribute-by-attribute if that contract ever changes.
             raise RuntimeError('webview.create_window returned no window')
         self._window = window
+        self.app._popup_instance = self
         self._shown = False
         self._window.events.loaded += self._on_loaded
         self._window.events.closed += self._on_window_closed
@@ -621,6 +622,40 @@ class UsagePopup:
         self._running = False
         self._wake_hook_thread()
         self._closed.set()
+
+    def close(self) -> None:
+        """Close only this widget window; the tray application keeps running."""
+        self._close()
+
+    def activate(self) -> None:
+        """Restore and raise an already-open widget without forcing it topmost."""
+        hwnd = self._popup_hwnd
+        if not hwnd:
+            try:
+                self._window.show()
+            except Exception:
+                pass
+            return
+
+        SW_RESTORE = 9
+        HWND_TOP = 0
+        SWP_NOMOVE = 0x0002
+        SWP_NOSIZE = 0x0001
+        SWP_SHOWWINDOW = 0x0040
+
+        try:
+            ctypes.windll.user32.ShowWindow(ctypes.wintypes.HWND(hwnd), SW_RESTORE)
+            ctypes.windll.user32.SetWindowPos(
+                ctypes.wintypes.HWND(hwnd), ctypes.wintypes.HWND(HWND_TOP),
+                0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW,
+            )
+            ctypes.windll.user32.BringWindowToTop(ctypes.wintypes.HWND(hwnd))
+            ctypes.windll.user32.SetForegroundWindow(ctypes.wintypes.HWND(hwnd))
+        except Exception:
+            try:
+                self._window.show()
+            except Exception:
+                pass
 
     def _close(self) -> None:
         self._running = False

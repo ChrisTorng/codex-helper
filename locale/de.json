@@ -27,6 +27,7 @@
     "autostart": "Mit Windows starten",
     "restart": "Neu starten",
     "show_widget": "Widget anzeigen",
+    "hide_widget": "Widget ausblenden",
     "test_commands": "Ereignisbefehle testen",
     "test_reset_5h": "Reset (5-Stunden)",
     "test_reset_7d": "Reset (wöchentlich)",
