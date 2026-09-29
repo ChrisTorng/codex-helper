@@ -376,7 +376,7 @@ def _init_config(snap: CacheSnapshot, next_poll_time: float | None = None, *, al
             'status_next_update': T['status_next_update'], 'status_refreshing': T['status_refreshing'],
             'status_local_snapshot': T['status_local_snapshot'], 'status_session_mode': T['status_session_mode'],
             'duration_hm': T['duration_hm'], 'duration_m': T['duration_m'], 'duration_s': T['duration_s'],
-            'menu_always_on_top': T['always_on_top'], 'menu_settings': T['settings_title'],
+            'menu_hide_widget': T['hide_widget'], 'menu_always_on_top': T['always_on_top'], 'menu_settings': T['settings_title'],
             'menu_about': T['about_title'], 'menu_quit': T['quit'],
         },
         'app_version': __version__,
